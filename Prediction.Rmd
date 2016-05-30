@@ -1,0 +1,117 @@
+---
+title: "Prediction of Quality of Weight Lifiting Excercise"
+author: "Periasamy Ramamoorthy"
+date: "May 29, 2016"
+output: html_document
+---
+
+# Synopsis
+
+We attempted to predict the quality of performance of a simple weight lifting excercise using data set made available for the assignment. The original data set was optimized to include subset of relevent features. We had applied various machine learning algorithms like Random Forest, AdaBoost, Linear Discriminant Analysis and Naive Bayes to predict the quality of the excercise, categorized into 5 types ranging from A to E. Random Forest method resulted in best prediction with an accuracy of 96%.
+
+# Introduction 
+
+The objective of this assignment is to predict the quality of performance of a weight lifting excercise called Unilateral Biceps Curl, using data from accelerometers attached to the arm, forearm, belt and dumbell of the 6 different participants. They performed 10 repitions of the excercise in 5 distinct fashion - ranging from correct manner categorized as 'A' to various other incorrect execution categorized as 'B' to 'E'. The goal is to build a suitable statistical inference model to be able to accurately predict these outcome categories from similar accelerometer data.
+
+# Data Processing
+
+We first load the required R libraries for the assignment and load the assignment data files, assuming they are in the current directory. We use cross-validation technique to create a training set, testing set and a validation set. Various models were tried out and tuned using the training set. Their accurancy was baselined using testing set. The selected models were run once finally on the validation to estimate their out of sample error rate and decide on best one.
+```{r cvdatasets}
+library(dplyr)
+library(caret)
+dat <- read.csv("pml-training.csv")
+set.seed(7577)
+library(caret)
+inBuild <- createDataPartition(dat$classe, p=0.7, list=F)
+validation <- dat[-inBuild, ]
+buildData <- dat[inBuild, ]
+inTrain <- createDataPartition(buildData$classe, p=0.7, list=F)
+training <- buildData[inTrain, ]
+testing <- buildData[-inTrain, ]
+dim(training); dim(testing); dim(validation)
+```
+
+# Preprocessing and Features Selection
+
+The original data set contains 160 variables and an initial visual examination using str() and summary() (not reproduced here to optimize report length), revealed that lot of columns may not be relevent for the prediction. We noted the details of the features that were used by the authors of the original study. We also took into account the variable available with the test data set provided for the assignment, as it has to be used to generate our prediction. We decided on the following data processing on the original data set:
+
+## Removal of NA columns
+We first discard all columns that have only NA's as their values
+```{r removnacols}
+training <- training[ , colSums(is.na(training)) == 0]
+```
+
+## Elimination of Near Zero Variance Covariates
+We then identify variables that may not contribute to prediction due to their low variability in the sample and eliminate them.
+```{r removenzv}
+nzv <- nearZeroVar(training)
+training <- training[-nzv]
+```
+
+## Removal of misc. factor variables
+Visual examination of remianing columns show that initial set of 6 columns regarding excercise participant, time window, etc. are not relvent for prediction of quality of the excercise, and we remove them.
+```{r removemisc}
+training <- subset(training, select=-c(1:6))
+```
+
+The final dataset after preprocessing now contains 53 variables that will be used for model development. We can further reduce the features to most essential using Principal Component Analysis, as part of the model training option.
+
+# Model Development and Evaluation
+
+We evaluated various models to use for the prediction and zeroed in on four of them outlined below.
+
+## Linear Discriminant Analysis Model
+This is one of the earliest models for qualitative analysis which was computationally less demanding.
+```{r ldamodel}
+modFitLda <- train(training$classe ~ ., data=training, preProcess="pca", method="lda")
+confusionMatrix(predict(modFitLda, testing), testing$classe)
+```
+
+## Naive Bayes Model
+This is a more recent non-linear classification model based on naive representation of Bayes probabiblity. This is also relatively computationally less demanding but relies on additonal assumptions regarding distributon of the data.
+```{r nbmodel, cache=TRUE}
+modFitNb <- train(training$classe ~ ., data=training, preProcess="pca", method="nb")
+confusionMatrix(predict(modFitNb, testing), testing$classe)
+```
+
+## AdaBoost Model
+Recent classification prediction model based on boosting a subset of the variables to get stronger predicton. We used one such boosting technique AdaBoost for our assignment.
+```{r gbmmodel, cache=TRUE}
+modFitGbm <- train(training$classe ~ ., data=training, preProcess="pca", method="gbm", verbose=F)
+confusionMatrix(predict(modFitGbm, testing), testing$classe)
+```
+
+## Random Forest Model
+One of the best performing models but computationally demanding (including for this assignment). It is possible to enable parallel processing to improve its performance but this was not attempted for this assignment report.
+```{r rfmodel, cache=TRUE}
+modFitRf <- train(training$classe ~ ., data=training, preProcess="pca", method="rf")
+confusionMatrix(predict(modFitRf, testing), testing$classe)
+```
+
+We notice that of all the models Random Forest was bes performing with accuracy of about 96%.
+
+# Validation to test Out-of-Sample Error
+
+We ran the model on validation set once to estimate the out of sample error rate.
+```{r outofsampleerrortest}
+confusionMatrix(predict(modFitLda, validation), validation$classe)
+confusionMatrix(predict(modFitNb, validation), validation$classe)
+confusionMatrix(predict(modFitGbm, validation), validation$classe)
+confusionMatrix(predict(modFitRf, validation), validation$classe)
+```
+
+We notice that the out of sample error rate for most of the models are more or less similar to their in-sample error, or within small additional margin on it. 
+
+# Conclusion
+Based on above validation, we conclude that **Random Forest** model is best one to use for predicting the assignment test data.
+
+# Prediction on Assignment Test Data
+We use the selected model to predict the results on assignment test data.
+```{r predicttest}
+testdat <- read.csv("pml-testing.csv")
+predict(modFitRf, testdat)
+```
+
+
+# References
+This assignment is based on original study of Human Activity Recognition by groupware@les-inf.puc-rio.br. We thank them for their permission to use the dataset. Further details of their original study can be found at http://groupware.les.inf.puc-rio.br/har
