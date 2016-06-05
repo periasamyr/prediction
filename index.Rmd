@@ -65,7 +65,7 @@ We evaluated various models to use for the prediction and zeroed in on three of 
 
 ## Linear Discriminant Analysis Model
 This is one of the earliest models for qualitative analysis which was computationally less demanding. 
-```{r ldamodel, message=FALSE, warning=FALSE, cache=TRUE}
+```{r ldamodel, message=FALSE, warning=FALSE, cache=FALSE}
 fitControlLda <- trainControl(method="cv", number=10)
 modFitLda <- train(training$classe ~ ., data=training, preProcess="pca", method="lda", trControl=fitControlLda)
 print(modFitLda)
@@ -74,7 +74,7 @@ print(modFitLda)
 
 ## Naive Bayes Model
 This is a more recent non-linear classification model based on naive representation of Bayes probabiblity. This is also relatively computationally less demanding but relies on additonal assumptions regarding distributon of the data.
-```{r nbmodel, message=FALSE, warning=FALSE, cache=TRUE}
+```{r nbmodel, message=FALSE, warning=FALSE, cache=FALSE}
 fitControlNb <- trainControl(method="cv", number=10)
 modFitNb <- train(training$classe ~ ., data=training, preProcess="pca", method="nb", trControl=fitControlNb)
 print(modFitNb)
@@ -82,7 +82,7 @@ print(modFitNb)
 
 ## Random Forest Model
 One of the best performing models but computationally demanding - we have used parallel processing to overcome the computational performance issues.
-```{r rfmodel, message=FALSE, warning=FALSE, cache=TRUE}
+```{r rfmodel, message=FALSE, warning=FALSE, cache=FALSE}
 cluster <- makeCluster(detectCores() - 1)
 registerDoParallel(cluster)
 
