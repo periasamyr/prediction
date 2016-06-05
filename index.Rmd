@@ -103,7 +103,7 @@ confusionMatrix(predict(modFitRf, testing), testing$classe)
 ```
 We notice that the out of sample error rate for most of the models are more or less similar to their in-sample error, or within small additional margin on it. 
 
-We notice that of all the models Random Forest was best performing with accuracy of about 98%.
+We notice that of all the models Random Forest was best performing with accuracy of about 97%.
 
 # Conclusion
 Based on above validation, we conclude that **Random Forest** model is best one to use for predicting the assignment test data.
